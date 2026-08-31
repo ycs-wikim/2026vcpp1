@@ -65,14 +65,35 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY0824));
 
+    /// OS가 전달하는 메시지를 받아내기 위한 변수 선언
     MSG msg;
 
+/*
+typedef struct tagMSG {
+    HWND        hwnd;       /// 어떤 윈도우가 이 메시지를 받아야 하는가?
+    UINT        message;    /// 사용자 입력의 종류
+    WPARAM      wParam;     /// Word Parameter (== char == 1byte)
+                            /// 문자 정보가 전달 : 키보드 입력 정보
+    LPARAM      lParam;     /// Long Parameter (== int == 2byte)
+                            /// 숫자 정보가 전달 : 마우스 입력 정보
+    DWORD       time;       /// 입력 발생 시간 정보
+    POINT       pt;         /// 좌표 값
+#ifdef _MAC
+    DWORD       lPrivate;
+#endif
+} MSG
+*/
+
     // 기본 메시지 루프입니다:
+    /// GetMessage( ) --> 인터럽트 방식
     while (GetMessage(&msg, nullptr, 0, 0))
     {
+        /// 간단한 해석
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
+            /// 세부 내용을 전체 해석
             TranslateMessage(&msg);
+            /// 실행 해줘~ OS에게 요청
             DispatchMessage(&msg);
         }
     }
@@ -156,20 +177,36 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
 //
 //
+/// CALLBACK 함수는 OS 또는 외부에서 호출할 수 있는 함수
+/// HWND : 사용자의 입력을 받을 대상 윈도우
+/// UINT : 사용자의 입력 정보(키보드, 마우스 ...)
+/// WPARAM/LPARAM : 사용자 정보 처리를 위한 부가
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    /// 사용자의 입력 확인
     switch (message)
     {
-    case WM_COMMAND:
+    /// WM_ : Window Message
+    case WM_COMMAND:            /// 메뉴 클릭 시 발생하는 윈도우 메시지
         {
+            /// 정보 획득 매크로
+            /// LOWORD( ) 매크로는 하위 절반 값을 숫자로 바꿔서 반환
             int wmId = LOWORD(wParam);
             // 메뉴 선택을 구문 분석합니다:
             switch (wmId)
             {
             case IDM_ABOUT:
+                /// 메시지 박스 API
+                MessageBox(hWnd, L"자 정보를 알려줘~", L"힘내자", MB_OK);
+                /// 정보 창을 생성해서 화면에 출력하는 API
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
             case IDM_EXIT:
+                /// 모달 형태의 윈도우 :
+                /// GUI 프로그램에서 메시지 박스처럼 동작을 멈추는 형태
+                /// 모달리스 형태의 윈도우 : 찾기 다이얼로그 형태
+                MessageBox(hWnd, L"프로그램 종료해줘~", L"힘 그만내", MB_OK);
+                /// 윈도우를 파괴해줘~ => 프로그램 종료
                 DestroyWindow(hWnd);
                 break;
             default:
@@ -177,18 +214,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+
+    /// 항상 화면에 표시되어야 하는 내용을 작성하는 윈도우 메시지
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
+            /// HDC : 핸들 Device(모니터 화면) Context(정보체)
+            /// Context Switching (문맥 교환)
+            /// Begin/EndPaint( ) - 지금부터 그리기 시작/종료
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
+            /// 1. 선 그리기 : 2단계로 나뉘어 있음
+            ///     1) 시작 위치를 설정한다.
+            MoveToEx(hdc, 0, 0, NULL);
+            /// 2) 끝 위치까지 선을 그린다.
+            LineTo(hdc, 600, 267);
+
+            /// 그리기를 종료
             EndPaint(hWnd, &ps);
         }
         break;
+
+    /// 프로그램이 종료될거야~ 그러니! 종료전에 필요한 작업 진행해~
     case WM_DESTROY:
+        MessageBox(hWnd, L"곧 프로그램 종료될 예정입니다.", L"힘 그만내!!!!!!!!!!!", MB_OK);
+        /// GetMessage( )를 실패시킨다!
         PostQuitMessage(0);
         break;
     default:
+        /// Default Windows Procedure
+        /// 처리되지 않은 윈도우 메시지 처리 요청
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
